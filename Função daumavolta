@@ -1,0 +1,19 @@
+void Carro::daUmaVolta() {
+	// Dorme por um tempo fixo
+
+	// voltaAcabou = true
+
+
+
+
+	if (Carro::CAPACIDADE==Carro::numPassageiros){  	// carro da uma volta se numero de passageiros for igual a sua capacidade 
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));   // thread do carro vai dormir 
+       cout << "thread carro dormindo"<< endl;
+        // voltaAcabou=true;                 // flag que volta acabou 
+	}
+	//voltaAcabou=false;
+
+
+
+}
