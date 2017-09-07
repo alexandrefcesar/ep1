@@ -1,3 +1,8 @@
+#include <thread>
+#include <iostream>   // colocar esses includes
+#include <chrono>
+
+
 void Carro::daUmaVolta() {
 	// Dorme por um tempo fixo
 
