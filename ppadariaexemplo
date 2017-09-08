@@ -1,0 +1,121 @@
+// http://www.csee.wvu.edu/~jdm/classes/cs550/notes/tech/mutex/Bakery.html
+// A Novel N-Process Solution: Lamport's Bakery Algorithm
+// The bakery algorithm is a very different approach proposed by Leslie Lamport. It's based on the "take-a-number" system used in bakeries and delicatessens.
+
+// CONCEPT: A process waiting to enter its critical section chooses a number. This number must be greater than all other numbers currently in use. There is a global shared array of current numbers for each process. The entering process checks all other processes sequentially, and waits for each one which has a lower number. Ties are possible; these are resolved using process IDs.
+
+#include <thread>
+#include <mutex>
+#include <iostream>
+#include <csignal>    // sigterm
+#include <cstring>    // strsignal
+
+const int NUM_THREADS = 4;
+volatile bool choosing[NUM_THREADS];
+volatile int num[NUM_THREADS];
+
+void lockInit()
+{
+    for (int j=0; j < NUM_THREADS; j++) {
+      num[j] = 0;
+    }
+}
+
+void lock(int i)
+{
+	/* choose a number */
+	choosing[i] = true;
+	// num[i] = max(num[0], ..., num[NUM_THREADS-1]) + 1;
+  int max = num[0]; 
+  for(int i = 1; i < NUM_THREADS ; i++) if(num[i] > max) max = num[i];
+  num[i] = max+1;
+
+	choosing[i] = false;
+	
+	/* for all other processes */
+	for (int j=0; j < NUM_THREADS; j++) {
+	
+		/* wait if the process is currently choosing */
+		while (choosing[j]) 
+      {std::this_thread::yield();}
+		
+		/* wait if the process has a number and comes ahead of us */
+		if ((num[j] > 0) &&
+		  ((num[j] < num[i]) ||
+		  (num[j] == num[i]) && (j < i))
+    ) {
+			while (num[j] > 0)
+        {std::this_thread::yield();}
+		}
+	}
+}
+		
+void unlock(int i)
+{
+	num[i] = 0; /* clear our number */
+}
+
+volatile int count_cs[11] = {0};
+volatile bool exitFlag = false;
+
+std::mutex m;
+void Thread(void* voidPtr)
+{
+  int i = *(int*) voidPtr;
+
+  // 1. capture 'i' as [i], [&], or [=] ---  no error on capture
+  // 2. using 'i' generates syntax error
+  signal(SIGTERM, [&] (int sig) {m.lock();std::cout << "thread " << ": sig=" << sig << " " << strsignal(sig) << "\n";m.unlock(); exit(sig);});
+  // signal(SIGTERM, [&] (int sig) {std::cout << "thread " << i << ": sig=" << sig << " (SIGTERM)\n"; exit(sig);});
+
+  // signal(SIGTERM, [&] (int sig) { exit(sig); } );
+
+  while (1) {
+    if(exitFlag) break;
+    lock(i);
+    count_cs[i+1] = count_cs[i+1] + 1 ;
+    // printf("critical section of %d\n", i+1);
+    unlock(i);
+  }
+lock(i);
+  std::cout << "thread " << i << " exiting.\n";
+unlock(i);
+}
+
+int main(int argc,char*argv[])
+{
+  try {
+    int duration = 5000;
+    std::thread threads[NUM_THREADS];
+    lockInit();
+    for(int t = 0; t < NUM_THREADS; t++){
+      printf("In main: creating thread %d\n", t+1);
+      threads[t] =  std::thread(Thread, (void*)&t);
+    }
+    usleep(duration*1000);
+    for(int t=0; t < NUM_THREADS; t++) {
+      printf("count of thread no %d is %d\n",t+1,count_cs[t+1]);
+    }
+
+    usleep(duration*1000);
+    for(int t=0; t < NUM_THREADS; t++) {
+      printf("count of thread no %d is %d\n",t+1,count_cs[t+1]);
+    }
+
+    exitFlag = true;
+    std::cout << " GB waiting for threads to exit\n";
+    usleep(1000*1000);
+    std::cout << " GB kill threads\n";
+    for(int t=0; t < NUM_THREADS; t++)
+      pthread_kill(threads[t].native_handle(), SIGTERM);
+
+    std::cout << " GB join threads\n";
+    for(int t=0; t < NUM_THREADS; t++)
+      threads[t].join();
+
+  } catch(const std::exception& e) {
+    std::cerr << e.what() << "\n";
+  }
+  std::cout << " GB main finished.\n";
+  return 0;
+}
