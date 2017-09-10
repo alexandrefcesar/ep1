@@ -1,0 +1,66 @@
+#include <thread>
+#include <iostream>
+#include <chrono>
+#include "include/Carro.h"
+#include "include/Parque.h"
+#include <random>
+const int Carro::CAPACIDADE = 5;
+int Carro::numPassageiros = 0;
+int tempodevolta=1;
+
+Carro::Carro() {
+	this->voltas = 0;
+
+}
+
+Carro::~Carro() {
+}
+
+void Carro::esperaEncher() {
+	while (Carro::numPassageiros < Carro::CAPACIDADE) {
+
+    cout << "\ncarro enchendo\n" << endl;
+    this_thread::sleep_for(chrono::milliseconds(rand() % 1500 + 1500));
+	}
+}
+
+void Carro::daUmaVolta() {
+	// Dorme por um tempo fixo
+
+	// voltaAcabou = true
+
+	// carro da uma volta se numero de passageiros == numero de acentos
+
+	if (Carro::CAPACIDADE==Carro::numPassageiros){
+
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+       cout << "thread carro está dando uma volta "<< endl;
+       //  voltaAcabou=true;
+	}
+
+
+
+
+}
+
+void Carro::esperaEsvaziar() {
+	while (Carro::numPassageiros > 0) {
+     this_thread::sleep_for(chrono::milliseconds(rand() % 1500 + 1500));
+    }
+}
+
+int Carro::getNVoltas() {
+	return voltas;
+}
+
+void Carro::run() {
+	while (Parque::numPessoas > 0) {
+		esperaEncher();
+
+		daUmaVolta();
+
+		esperaEsvaziar();
+
+		voltas++;
+	}
+}
