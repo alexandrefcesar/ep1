@@ -8,9 +8,9 @@
 #include <random>
 #include <thread>
 #define MAX_NUM_VOLTAS 2
-    atomic_int turn[10];
-    atomic_int number;
-    int numThreads;
+    atomic_int turn[9];
+    atomic_int numIngressos;
+    int numero;
     mutex Mutex;
 Passageiro::Passageiro(int id, Carro *c) {
 	this->id = id;
@@ -23,45 +23,51 @@ Passageiro::~Passageiro() {
 
 
 void Passageiro::entraNoCarro() {
- int i = numThreads++;
-
-    Mutex.lock();
-    cout << "Thread " << i << "indo pegar ingresso." << endl;
+    numero = numero +1 ; //dica dada pelo professr
+    int id =numero;
+    Mutex.lock();   // evitar que o log fique bagunçado , evita que duas ou mais threads ter acesso a sc
+         cout << "Thread " << id << "indo pegar ingresso." << endl;
     Mutex.unlock();
-     while (1)
-    {
-    turn[i] = number.fetch_add(1);  // pegando ficha
+
+    while(true){
+           turn[id] = numIngressos.fetch_add(1);  // dica dada pelo professor, identificador da thread
 	// Protocolo de entrada o Algoritmo da Padaria
-	// Incrementa o numero de passageiros no carro (use a funcao fetch_add)
-    Mutex.lock();
-    cout << "t" << i << "\tingresso " << turn[i] << endl;   // thread pegou o ingresso
-
-    Mutex.unlock();
-    this_thread::sleep_for(chrono::milliseconds(rand() % 1500 + 1500));
+	// Incrementa o  de passageiros no carro (use a funcao fetch_add)
+           Mutex.lock();
+                  cout << "thread" << id << "\tingresso " << turn[id] << endl;   // thread pegou o ingresso
+           Mutex.unlock();
+           
+           this_thread::sleep_for(chrono::milliseconds(rand() % 1500 + 1500));
 
      }
-
-
 }
 
 void Passageiro::esperaVoltaAcabar() {
-	// while (!voltaAcabou) { delay; }
+	//  while (!voltaAcabou) {
+    //  this_thread::sleep_for(chrono::milliseconds(rand() % 1500 + 1500));
+	//}
 }
 
 void Passageiro::saiDoCarro() {
-	// Protocolo de saida do Algoritmo da Padaria
-	// Decrementa o numero de passageiros no carro (use a funcao fetch_add)
+	// Protocolo de saida do Algoritmo da
+
+	//turn[i]=numIngressos.fetch_sub;
+	// Decrementa o  de passageiros no carro (use a funcao fetch_add)
+
 }
 
 void Passageiro::passeiaPeloParque() {
 	// Dorme um tempo aleatorio
+	this_thread::sleep_for(chrono::milliseconds(rand() % 1500 + 1500));
 }
 
 bool Passageiro::parqueFechado() {
 	if (carro->getNVoltas() < MAX_NUM_VOLTAS)
 		return false;
 
-	return true;
+	else
+	    return true;
+
 }
 
 void Passageiro::run() {
@@ -75,6 +81,6 @@ void Passageiro::run() {
 		passeiaPeloParque(); // secao nao critica
 	}
 
-	// decrementa o numero de pessoas no parque
+	// decrementa o  de pessoas no parque
 }
 
